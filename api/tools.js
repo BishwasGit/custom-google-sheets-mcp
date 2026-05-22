@@ -85,6 +85,14 @@ module.exports = async (req, res) => {
   console.log(`[MCP] ${req.method} ${req.url}`);
 
   try {
+    // Health check endpoint - no auth needed (for Claude Web connectivity verification)
+    if ((pathname === "/health" || pathname === "/ping") && req.method === "GET") {
+      return res.status(200).json({ 
+        status: "ok",
+        message: "Google Sheets MCP is running"
+      });
+    }
+
     const pathname = req.url.split("?")[0]; // Remove query string
     
     // Root endpoint - MCP initialization (Claude Web connectivity check - no auth needed)
@@ -101,8 +109,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // List tools - requires auth
-    if ((pathname === "/tools" || pathname === "") && req.method === "GET") {
+    // /tools GET - return tools list (REQUIRES AUTH when query string is present)
+    if (pathname === "/tools" && req.method === "GET") {
       if (!verifyApiKey(req)) {
         return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
       }
