@@ -4,26 +4,14 @@
   "public": false,
   "builds": [
     {
-      "src": "api/tools.js",
+      "src": "api/oauth.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/tools",
-      "dest": "api/tools.js"
-    },
-    {
-      "src": "/tools",
-      "dest": "api/tools.js"
-    },
-    {
-      "src": "/",
-      "dest": "api/tools.js"
-    },
-    {
       "src": "/(.*)",
-      "dest": "public/$1"
+      "dest": "api/oauth.js"
     }
   ]
 }
