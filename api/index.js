@@ -1,23 +1,14 @@
 const { google } = require("googleapis");
 
-// Parse credentials from environment variable
+// Parse credentials
 function getCredentials() {
+  const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!cred) throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
+  
   try {
-    const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    
-    if (!cred) {
-      throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
-    }
-    
-    // Try parsing as JSON (for Vercel)
-    try {
-      return JSON.parse(cred);
-    } catch {
-      throw new Error("Invalid credentials format - must be valid JSON");
-    }
-  } catch (err) {
-    console.error("❌ Credentials error:", err.message);
-    throw err;
+    return JSON.parse(cred);
+  } catch {
+    throw new Error("Invalid credentials format");
   }
 }
 
@@ -31,7 +22,6 @@ async function getSheetsClient() {
   return google.sheets({ version: "v4", auth: client });
 }
 
-// Helper to parse JSON body
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -49,14 +39,10 @@ async function parseBody(req) {
 }
 
 module.exports = async (req, res) => {
-  // Enable CORS
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-  );
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
     res.status(200).end();
@@ -64,12 +50,21 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Health check
+    // Root endpoint - MCP initialization
     if (req.url === "/" && req.method === "GET") {
-      return res.status(200).json({ status: "Google Sheets MCP running" });
+      return res.status(200).json({
+        protocolVersion: "2024-11-05",
+        capabilities: {
+          tools: {},
+        },
+        serverInfo: {
+          name: "google-sheets-mcp",
+          version: "1.0.0",
+        },
+      });
     }
 
-    // List tools
+    // List tools (MCP tools/list)
     if (req.url === "/tools" && req.method === "GET") {
       return res.status(200).json({
         tools: [
@@ -128,77 +123,87 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Tool execution routes
+    // Tool execution
     if (req.url.startsWith("/tools/") && req.method === "POST") {
       const toolName = req.url.split("/")[2];
-      
-      // Parse request body
-      const body = req.method === "POST" ? await parseBody(req) : {};
+      const body = await parseBody(req);
       const { range, values, value } = body;
 
       const sheets = await getSheetsClient();
 
       if (toolName === "append_row") {
         if (!range || !values) {
-          return res.status(400).json({ error: "Missing required fields: range, values" });
+          return res.status(400).json({
+            error: "Missing required fields: range, values",
+          });
         }
-        
+
         const response = await sheets.spreadsheets.values.append({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
           valueInputOption: "RAW",
-          requestBody: {
-            values: [values],
-          },
+          requestBody: { values: [values] },
         });
+
         return res.status(200).json({
-          success: true,
-          updatedRange: response.data.updates.updatedRange,
+          result: {
+            success: true,
+            updatedRange: response.data.updates.updatedRange,
+          },
         });
       }
 
       if (toolName === "read_sheet") {
         if (!range) {
-          return res.status(400).json({ error: "Missing required field: range" });
+          return res.status(400).json({
+            error: "Missing required field: range",
+          });
         }
-        
+
         const response = await sheets.spreadsheets.values.get({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
         });
+
         return res.status(200).json({
-          values: response.data.values || [],
+          result: {
+            values: response.data.values || [],
+          },
         });
       }
 
       if (toolName === "update_cell") {
         if (!range || !value) {
-          return res.status(400).json({ error: "Missing required fields: range, value" });
+          return res.status(400).json({
+            error: "Missing required fields: range, value",
+          });
         }
-        
+
         const response = await sheets.spreadsheets.values.update({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
           valueInputOption: "RAW",
-          requestBody: {
-            values: [[value]],
-          },
+          requestBody: { values: [[value]] },
         });
+
         return res.status(200).json({
-          success: true,
-          updatedCells: response.data.updatedCells,
+          result: {
+            success: true,
+            updatedCells: response.data.updatedCells,
+          },
         });
       }
 
-      return res.status(404).json({ error: `Tool ${toolName} not found` });
+      return res.status(404).json({
+        error: `Tool ${toolName} not found`,
+      });
     }
 
-    return res.status(404).json({ error: "Not found" });
+    return res.status(404).json({ error: "Endpoint not found" });
   } catch (error) {
     console.error("Error:", error);
-    return res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
-      details: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
   }
 };
