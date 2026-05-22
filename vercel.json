@@ -18,6 +18,10 @@
       "dest": "api/tools.js"
     },
     {
+      "src": "/",
+      "dest": "api/tools.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "public/$1"
     }

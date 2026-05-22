@@ -87,21 +87,18 @@ module.exports = async (req, res) => {
   try {
     const pathname = req.url.split("?")[0]; // Remove query string
     
-    // Root endpoint - MCP initialization (no auth needed for discovery)
-    if ((pathname === "/" || pathname === "" || pathname === "/tools") && req.method === "GET") {
-      // If it's a simple root request, return init data
-      if (pathname === "/" || pathname === "") {
-        return res.status(200).json({
-          protocolVersion: "2024-11-05",
-          capabilities: {
-            tools: {},
-          },
-          serverInfo: {
-            name: "google-sheets-mcp",
-            version: "1.0.0",
-          },
-        });
-      }
+    // Root endpoint - MCP initialization (Claude Web connectivity check - no auth needed)
+    if ((pathname === "/" || pathname === "") && req.method === "GET") {
+      return res.status(200).json({
+        protocolVersion: "2024-11-05",
+        capabilities: {
+          tools: {},
+        },
+        serverInfo: {
+          name: "google-sheets-mcp",
+          version: "1.0.0",
+        },
+      });
     }
 
     // List tools - requires auth
