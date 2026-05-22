@@ -1,15 +1,37 @@
 require("dotenv").config();
 const express = require("express");
 const { google } = require("googleapis");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
 app.use(express.json());
 
 console.error("🌐 Initializing Google Sheets MCP HTTP Server...");
 
-// Google Sheets auth
+// Google Sheets auth - handle both file path and JSON content
+let authConfig;
+try {
+  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  
+  if (credPath) {
+    // Try to parse as JSON first (for Vercel/cloud environments)
+    try {
+      authConfig = JSON.parse(credPath);
+    } catch {
+      // If not JSON, treat as file path (for local development)
+      authConfig = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+    }
+  } else {
+    throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
+  }
+} catch (err) {
+  console.error("❌ Failed to load Google credentials:", err.message);
+  process.exit(1);
+}
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  credentials: authConfig,
   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
 

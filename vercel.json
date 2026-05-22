@@ -14,9 +14,5 @@
       "src": "/(.*)",
       "dest": "http-server.js"
     }
-  ],
-  "env": {
-    "GOOGLE_APPLICATION_CREDENTIALS": "@google-application-credentials",
-    "SPREADSHEET_ID": "@spreadsheet-id"
-  }
+  ]
 }
