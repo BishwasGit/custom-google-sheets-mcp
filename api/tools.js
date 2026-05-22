@@ -85,22 +85,27 @@ module.exports = async (req, res) => {
   console.log(`[MCP] ${req.method} ${req.url}`);
 
   try {
+    const pathname = req.url.split("?")[0]; // Remove query string
+    
     // Root endpoint - MCP initialization (no auth needed for discovery)
-    if (req.url === "/" && req.method === "GET") {
-      return res.status(200).json({
-        protocolVersion: "2024-11-05",
-        capabilities: {
-          tools: {},
-        },
-        serverInfo: {
-          name: "google-sheets-mcp",
-          version: "1.0.0",
-        },
-      });
+    if ((pathname === "/" || pathname === "" || pathname === "/tools") && req.method === "GET") {
+      // If it's a simple root request, return init data
+      if (pathname === "/" || pathname === "") {
+        return res.status(200).json({
+          protocolVersion: "2024-11-05",
+          capabilities: {
+            tools: {},
+          },
+          serverInfo: {
+            name: "google-sheets-mcp",
+            version: "1.0.0",
+          },
+        });
+      }
     }
 
-    // List tools (MCP tools/list) - requires auth
-    if (req.url === "/tools" && req.method === "GET") {
+    // List tools - requires auth
+    if ((pathname === "/tools" || pathname === "") && req.method === "GET") {
       if (!verifyApiKey(req)) {
         return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
       }
@@ -163,12 +168,14 @@ module.exports = async (req, res) => {
     }
 
     // Tool execution - requires auth
-    if (req.url.startsWith("/tools/") && req.method === "POST") {
+    if ((pathname.startsWith("/tools/") || (pathname.startsWith("/") && pathname !== "/")) && req.method === "POST") {
       if (!verifyApiKey(req)) {
         return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
       }
 
-      const toolName = req.url.split("/")[2];
+      // Extract tool name from path
+      const parts = pathname.split("/").filter(p => p);
+      const toolName = parts[parts.length - 1]; // Last part is the tool name
       const body = await parseBody(req);
       const { range, values, value } = body;
 
