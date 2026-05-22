@@ -6,9 +6,11 @@ function getCredentials() {
   if (!cred) throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
   
   try {
+    // Try to parse as JSON
     return JSON.parse(cred);
-  } catch {
-    throw new Error("Invalid credentials format");
+  } catch (e) {
+    console.error("Failed to parse GOOGLE_APPLICATION_CREDENTIALS as JSON:", e.message);
+    throw new Error(`Invalid credentials format: ${e.message}`);
   }
 }
 
@@ -38,15 +40,35 @@ async function parseBody(req) {
   });
 }
 
-// Verify API Key
+// Verify API Key - accept X-API-Key header, Bearer token, or query parameter
 function verifyApiKey(req) {
-  const apiKey = req.headers["x-api-key"] || 
-                 (req.url.includes("?") ? new URL(req.url, "http://localhost").searchParams.get("api_key") : null);
+  const apiKey = process.env.MCP_API_KEY;
+  if (!apiKey) return false;
   
-  if (!apiKey || apiKey !== process.env.MCP_API_KEY) {
-    return false;
+  // Check X-API-Key header
+  if (req.headers["x-api-key"] === apiKey) {
+    return true;
   }
-  return true;
+  
+  // Check Bearer token
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    if (token === apiKey) {
+      return true;
+    }
+  }
+  
+  // Check query parameter (for Claude Web compatibility)
+  if (req.url.includes("?")) {
+    const url = new URL(req.url, "http://localhost");
+    const key = url.searchParams.get("key");
+    if (key === apiKey) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 module.exports = async (req, res) => {
@@ -59,6 +81,8 @@ module.exports = async (req, res) => {
     res.status(200).end();
     return;
   }
+
+  console.log(`[MCP] ${req.method} ${req.url}`);
 
   try {
     // Root endpoint - MCP initialization (no auth needed for discovery)
