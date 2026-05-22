@@ -2,17 +2,16 @@
   "name": "google-sheets-mcp",
   "version": 2,
   "public": false,
-  "buildCommand": "npm install",
   "builds": [
     {
-      "src": "http-server.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "http-server.js"
+      "dest": "api/index.js"
     }
   ]
 }
