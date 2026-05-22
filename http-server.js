@@ -68,12 +68,19 @@ function authMiddleware(req, res, next) {
   return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
 }
 
-// Test route
+app.use(express.static('public'));
+
+// Test route - serve dashboard or API status
 app.get("/", (req, res) => {
-  res.json({ 
-    status: "Google Sheets MCP running",
-    auth: "Accepts X-API-Key or Authorization: Bearer <token>"
-  });
+  // If requesting JSON (from CLI), return API status
+  if (req.accepts('json')) {
+    return res.json({ 
+      status: "Google Sheets MCP running",
+      auth: "Accepts X-API-Key, Authorization Bearer, or ?key=xxx"
+    });
+  }
+  // Otherwise serve dashboard HTML
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // List available tools
