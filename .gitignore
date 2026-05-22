@@ -14,3 +14,8 @@ out/
 service-account.json
 *.pem
 *.key
+
+./*.bak
+./service-account.json
+/service-account.json
+service-account.json

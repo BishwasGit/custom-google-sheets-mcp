@@ -1,7 +1,23 @@
-// Redirect root to dashboard
-module.exports = (req, res) => {
-  res.redirect(302, '/');
-};
+const { google } = require("googleapis");
+
+// Parse credentials
+function getCredentials() {
+  const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!cred) throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
+  
+  try {
+    return JSON.parse(cred);
+  } catch {
+    throw new Error("Invalid credentials format");
+  }
+}
+
+async function getSheetsClient() {
+  const credentials = getCredentials();
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
   const client = await auth.getClient();
   return google.sheets({ version: "v4", auth: client });
 }
