@@ -1,0 +1,22 @@
+{
+  "name": "google-sheets-mcp",
+  "version": 2,
+  "public": false,
+  "buildCommand": "npm install",
+  "builds": [
+    {
+      "src": "http-server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "http-server.js"
+    }
+  ],
+  "env": {
+    "GOOGLE_APPLICATION_CREDENTIALS": "@google-application-credentials",
+    "SPREADSHEET_ID": "@spreadsheet-id"
+  }
+}
