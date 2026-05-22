@@ -2,12 +2,21 @@
 
 A Model Context Protocol (MCP) server for Google Sheets integration with Claude AI.
 
+## 🐧 For Linux Users
+
+If you're on **Linux**, you can't use Claude Desktop (it's macOS/Windows only). Instead, use our **web dashboard**!
+
+→ **[Linux Setup Guide](LINUX_SETUP.md)** ← Open this for complete instructions
+
+**Quick start:** Visit https://custom-google-sheets-mcp.vercel.app/ and add your API key in Settings.
+
 ## Features
 
 - **append_row** - Add rows to your Google Sheet
 - **read_sheet** - Query data from ranges
 - **update_cell** - Modify individual cells
 - **API Key Authentication** - Secure access to your MCP server
+- **Web Dashboard** - User-friendly interface for all operations (Linux-friendly!)
 
 ## Setup
 
