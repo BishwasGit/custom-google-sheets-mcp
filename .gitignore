@@ -18,4 +18,5 @@ service-account.json
 ./*.bak
 ./service-account.json
 /service-account.json
+service-account.jsonkeys.bak
 service-account.json
