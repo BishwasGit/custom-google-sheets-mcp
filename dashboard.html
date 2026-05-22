@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets MCP Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 1em;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result {
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .success {
+            border-left-color: #10b981;
+            background: #ecfdf5;
+        }
+
+        .error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+        }
+
+        .status.connected {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status.disconnected {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Google Sheets MCP Dashboard</h1>
+            <p>Interact with your Google Sheet</p>
+            <div id="status" class="status disconnected">Checking server...</div>
+        </header>
+
+        <div class="dashboard">
+            <!-- Read Sheet -->
+            <div class="card">
+                <h2>📖 Read Sheet</h2>
+                <div class="form-group">
+                    <label for="readRange">Range (e.g., Sheet1!A1:C10)</label>
+                    <input type="text" id="readRange" placeholder="Sheet1!A1:C10" value="Sheet1!A1:C10">
+                </div>
+                <button onclick="readSheet()">Read Data</button>
+                <div id="readResult"></div>
+            </div>
+
+            <!-- Append Row -->
+            <div class="card">
+                <h2>➕ Append Row</h2>
+                <div class="form-group">
+                    <label for="appendRange">Range (e.g., Sheet1!A:Z)</label>
+                    <input type="text" id="appendRange" placeholder="Sheet1!A:Z" value="Sheet1!A:Z">
+                </div>
+                <div class="form-group">
+                    <label for="appendValues">Values (comma-separated)</label>
+                    <input type="text" id="appendValues" placeholder="John, john@example.com, 555-1234">
+                </div>
+                <button onclick="appendRow()">Add Row</button>
+                <div id="appendResult"></div>
+            </div>
+
+            <!-- Update Cell -->
+            <div class="card">
+                <h2>✏️ Update Cell</h2>
+                <div class="form-group">
+                    <label for="updateCell">Cell (e.g., Sheet1!A1)</label>
+                    <input type="text" id="updateCell" placeholder="Sheet1!A1">
+                </div>
+                <div class="form-group">
+                    <label for="updateValue">New Value</label>
+                    <input type="text" id="updateValue" placeholder="Enter new value">
+                </div>
+                <button onclick="updateCell()">Update</button>
+                <div id="updateResult"></div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+                <h2>⚙️ Settings</h2>
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key">
+                </div>
+                <div class="form-group">
+                    <label for="serverUrl">Server URL</label>
+                    <input type="text" id="serverUrl" placeholder="https://custom-google-sheets-mcp.vercel.app" 
+                           value="https://custom-google-sheets-mcp.vercel.app">
+                </div>
+                <button onclick="testConnection()">Test Connection</button>
+                <div id="settingsResult"></div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>🔗 <strong>For Claude Web:</strong> Share the dashboard URL or use the HTTP API directly</p>
+            <p style="margin-top: 10px; font-size: 0.85em;">API docs: POST /tools/{append_row|read_sheet|update_cell}</p>
+        </footer>
+    </div>
+
+    <script>
+        // Load settings from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiKey = localStorage.getItem('mcp_api_key');
+            const serverUrl = localStorage.getItem('mcp_server_url');
+            
+            if (apiKey) document.getElementById('apiKey').value = apiKey;
+            if (serverUrl) document.getElementById('serverUrl').value = serverUrl;
+            
+            testConnection();
+        });
+
+        function getConfig() {
+            return {
+                apiKey: document.getElementById('apiKey').value,
+                serverUrl: document.getElementById('serverUrl').value
+            };
+        }
+
+        function saveConfig() {
+            const config = getConfig();
+            localStorage.setItem('mcp_api_key', config.apiKey);
+            localStorage.setItem('mcp_server_url', config.serverUrl);
+        }
+
+        async function testConnection() {
+            const config = getConfig();
+            const resultDiv = document.getElementById('settingsResult');
+            const statusDiv = document.getElementById('status');
+
+            if (!config.apiKey) {
+                resultDiv.innerHTML = '<div class="result error">❌ Please enter an API key</div>';
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = 'Not configured';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result loading">Testing connection...</div>';
+
+            try {
+                const response = await fetch(`${config.serverUrl}/tools`, {
+                    method: 'GET',
+                    headers: {
+                        'X-API-Key': config.apiKey,
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `<div class="result success">✅ Connected! Found ${data.tools.length} tools</div>`;
+                    statusDiv.className = 'status connected';
+                    statusDiv.textContent = 'Connected';
+                    saveConfig();
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Server error: ${response.status}</div>`;
+                    statusDiv.className = 'status disconnected';
+                    statusDiv.textContent = 'Connection failed';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ ${error.message}</div>`;
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = 'Connection failed';
+            }
+        }
+
+        async function readSheet() {
+            const config = getConfig();
+            const range = document.getElementById('readRange').value;
+            const resultDiv = document.getElementById('readResult');
+
+            if (!range) {
+                resultDiv.innerHTML = '<div class="result error">❌ Enter a range</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result loading">Reading...</div>';
+            saveConfig();
+
+            try {
+                const response = await fetch(`${config.serverUrl}/tools/read_sheet`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': config.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ range })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.result) {
+                    const html = `<div class="result success">
+                        ✅ Data from ${range}:
+                        <pre>${JSON.stringify(data.result.values, null, 2)}</pre>
+                    </div>`;
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ ${data.error || 'Error reading sheet'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function appendRow() {
+            const config = getConfig();
+            const range = document.getElementById('appendRange').value;
+            const valuesStr = document.getElementById('appendValues').value;
+            const resultDiv = document.getElementById('appendResult');
+
+            if (!range || !valuesStr) {
+                resultDiv.innerHTML = '<div class="result error">❌ Fill in all fields</div>';
+                return;
+            }
+
+            const values = valuesStr.split(',').map(v => v.trim());
+            resultDiv.innerHTML = '<div class="result loading">Adding row...</div>';
+            saveConfig();
+
+            try {
+                const response = await fetch(`${config.serverUrl}/tools/append_row`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': config.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ range, values })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.result && data.result.success) {
+                    resultDiv.innerHTML = `<div class="result success">
+                        ✅ Row added to ${data.result.updatedRange}
+                    </div>`;
+                    document.getElementById('appendValues').value = '';
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ ${data.error || 'Error appending row'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ ${error.message}</div>`;
+            }
+        }
+
+        async function updateCell() {
+            const config = getConfig();
+            const range = document.getElementById('updateCell').value;
+            const value = document.getElementById('updateValue').value;
+            const resultDiv = document.getElementById('updateResult');
+
+            if (!range || !value) {
+                resultDiv.innerHTML = '<div class="result error">❌ Fill in all fields</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result loading">Updating...</div>';
+            saveConfig();
+
+            try {
+                const response = await fetch(`${config.serverUrl}/tools/update_cell`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': config.apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ range, value })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.result && data.result.success) {
+                    resultDiv.innerHTML = `<div class="result success">
+                        ✅ ${range} updated (${data.result.updatedCells} cells)
+                    </div>`;
+                    document.getElementById('updateValue').value = '';
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ ${data.error || 'Error updating cell'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
