@@ -32,23 +32,46 @@ function generateToken() {
 
 // ========== OAuth Authorize Endpoint ==========
 app.get("/oauth/authorize", (req, res) => {
-  const { code_challenge, code_challenge_method, state, resource } = req.query;
+  try {
+    const { code_challenge, code_challenge_method, state, resource } = req.query;
 
-  if (!code_challenge || !state) {
-    return res.status(400).json({ error: "Missing code_challenge or state" });
+    if (!code_challenge || !state) {
+      return res.status(400).json({ error: "Missing code_challenge or state" });
+    }
+
+    // Check environment variables
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REDIRECT_URI) {
+      console.error("Missing OAuth env vars:", {
+        GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
+        GOOGLE_REDIRECT_URI: !!process.env.GOOGLE_REDIRECT_URI,
+      });
+      return res.status(500).json({ 
+        error: "OAuth not configured", 
+        details: "Server missing Google OAuth credentials" 
+      });
+    }
+
+    if (!oauth2Client) {
+      console.error("oauth2Client not initialized");
+      return res.status(500).json({ error: "OAuth client not initialized" });
+    }
+
+    const codeVerifier = crypto.randomBytes(32).toString("base64url");
+    const pkceKey = `${state}:${Date.now()}`;
+    pkceStore.set(pkceKey, { codeVerifier, codeChallenge: code_challenge, state });
+
+    const googleAuthUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: SCOPES,
+      state: pkceKey,
+    });
+
+    res.redirect(googleAuthUrl);
+  } catch (error) {
+    console.error("OAuth authorize error:", error);
+    res.status(500).json({ error: error.message });
   }
-
-  const codeVerifier = crypto.randomBytes(32).toString("base64url");
-  const pkceKey = `${state}:${Date.now()}`;
-  pkceStore.set(pkceKey, { codeVerifier, codeChallenge: code_challenge, state });
-
-  const googleAuthUrl = oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: SCOPES,
-    state: pkceKey,
-  });
-
-  res.redirect(googleAuthUrl);
 });
 
 // ========== Google OAuth Callback ==========
