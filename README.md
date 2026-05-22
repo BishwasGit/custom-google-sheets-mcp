@@ -7,8 +7,15 @@ A Model Context Protocol (MCP) server for Google Sheets integration with Claude 
 - **append_row** - Add rows to your Google Sheet
 - **read_sheet** - Query data from ranges
 - **update_cell** - Modify individual cells
+- **API Key Authentication** - Secure access to your MCP server
 
 ## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- Google Cloud Service Account with Sheets API enabled
+- Claude Pro/Max subscription (for Claude Web integration)
 
 ### Local Development
 
@@ -24,17 +31,19 @@ npm install
 ```
 
 3. Set up environment variables
-Create a `.env` file:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
 ```env
-GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
+GOOGLE_APPLICATION_CREDENTIALS={"type":"service_account",...}
 SPREADSHEET_ID=your_spreadsheet_id
+MCP_API_KEY=your_secure_api_key
 PORT=5000
 ```
 
-4. Add your Google Service Account credentials
-Download from Google Cloud Console and save as `service-account.json`
-
-5. Run locally
+4. Run locally
 ```bash
 PORT=5000 node http-server.js
 ```
@@ -43,21 +52,34 @@ PORT=5000 node http-server.js
 
 1. Push to GitHub (already done)
 2. Import project in Vercel dashboard
-3. Add environment variables:
-   - `GOOGLE_APPLICATION_CREDENTIALS` - Your service account JSON (paste contents)
+3. Add these environment variables:
+   - `GOOGLE_APPLICATION_CREDENTIALS` - Your service account JSON (full content)
    - `SPREADSHEET_ID` - Your spreadsheet ID
+   - `MCP_API_KEY` - A secure random API key (generate with: `openssl rand -hex 32`)
 4. Deploy!
 
-### Connect to Claude
+### Connect to Claude Web
+
+**⚠️ Important:** Claude Web requires authentication for custom connectors.
 
 1. Go to `claude.ai/customize/connectors`
 2. Add custom connector:
-   - **URL**: Your Vercel deployment URL
    - **Name**: `google-sheets-mcp`
+   - **URL**: `https://custom-google-sheets-mcp.vercel.app`
+   - **Authentication**: Select "API Key" 
+   - **API Key Header**: `X-API-Key`
+   - **API Key Value**: Your `MCP_API_KEY` value
+3. Save
 
 ## API Endpoints
 
-- `GET /` - Health check
+All endpoints except `/` require `X-API-Key` header:
+
+```bash
+curl -H "X-API-Key: your_key" https://custom-google-sheets-mcp.vercel.app/tools
+```
+
+- `GET /` - Server info (no auth required)
 - `GET /tools` - List available tools
 - `POST /tools/append_row` - Append a row
 - `POST /tools/read_sheet` - Read data
@@ -65,12 +87,21 @@ PORT=5000 node http-server.js
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON |
-| `SPREADSHEET_ID` | Google Sheet ID |
-| `PORT` | Server port (default: 3000) |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GOOGLE_APPLICATION_CREDENTIALS` | Service account JSON | Yes |
+| `SPREADSHEET_ID` | Google Sheet ID | Yes |
+| `MCP_API_KEY` | API key for authentication | Yes |
+| `PORT` | Server port (default: 3000) | No |
+
+## Security
+
+- API keys are validated on all tool endpoints
+- Service account credentials are stored securely as environment variables
+- Only HTTPS connections are supported
+- CORS is enabled for Claude Web integration
 
 ## License
 
 MIT
+

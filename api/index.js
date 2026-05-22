@@ -38,11 +38,22 @@ async function parseBody(req) {
   });
 }
 
+// Verify API Key
+function verifyApiKey(req) {
+  const apiKey = req.headers["x-api-key"] || 
+                 (req.url.includes("?") ? new URL(req.url, "http://localhost").searchParams.get("api_key") : null);
+  
+  if (!apiKey || apiKey !== process.env.MCP_API_KEY) {
+    return false;
+  }
+  return true;
+}
+
 module.exports = async (req, res) => {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization");
 
   if (req.method === "OPTIONS") {
     res.status(200).end();
@@ -50,7 +61,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Root endpoint - MCP initialization
+    // Root endpoint - MCP initialization (no auth needed for discovery)
     if (req.url === "/" && req.method === "GET") {
       return res.status(200).json({
         protocolVersion: "2024-11-05",
@@ -64,8 +75,12 @@ module.exports = async (req, res) => {
       });
     }
 
-    // List tools (MCP tools/list)
+    // List tools (MCP tools/list) - requires auth
     if (req.url === "/tools" && req.method === "GET") {
+      if (!verifyApiKey(req)) {
+        return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
+      }
+
       return res.status(200).json({
         tools: [
           {
@@ -123,8 +138,12 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Tool execution
+    // Tool execution - requires auth
     if (req.url.startsWith("/tools/") && req.method === "POST") {
+      if (!verifyApiKey(req)) {
+        return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
+      }
+
       const toolName = req.url.split("/")[2];
       const body = await parseBody(req);
       const { range, values, value } = body;
