@@ -13,8 +13,7 @@ function getCredentials() {
     try {
       return JSON.parse(cred);
     } catch {
-      // If that fails, it might be a path (shouldn't happen in Vercel)
-      throw new Error("Invalid credentials format");
+      throw new Error("Invalid credentials format - must be valid JSON");
     }
   } catch (err) {
     console.error("❌ Credentials error:", err.message);
@@ -30,6 +29,23 @@ async function getSheetsClient() {
   });
   const client = await auth.getClient();
   return google.sheets({ version: "v4", auth: client });
+}
+
+// Helper to parse JSON body
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", chunk => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
 }
 
 module.exports = async (req, res) => {
@@ -115,11 +131,18 @@ module.exports = async (req, res) => {
     // Tool execution routes
     if (req.url.startsWith("/tools/") && req.method === "POST") {
       const toolName = req.url.split("/")[2];
-      const { range, values, value } = req.body || {};
+      
+      // Parse request body
+      const body = req.method === "POST" ? await parseBody(req) : {};
+      const { range, values, value } = body;
 
       const sheets = await getSheetsClient();
 
       if (toolName === "append_row") {
+        if (!range || !values) {
+          return res.status(400).json({ error: "Missing required fields: range, values" });
+        }
+        
         const response = await sheets.spreadsheets.values.append({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
@@ -135,6 +158,10 @@ module.exports = async (req, res) => {
       }
 
       if (toolName === "read_sheet") {
+        if (!range) {
+          return res.status(400).json({ error: "Missing required field: range" });
+        }
+        
         const response = await sheets.spreadsheets.values.get({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
@@ -145,6 +172,10 @@ module.exports = async (req, res) => {
       }
 
       if (toolName === "update_cell") {
+        if (!range || !value) {
+          return res.status(400).json({ error: "Missing required fields: range, value" });
+        }
+        
         const response = await sheets.spreadsheets.values.update({
           spreadsheetId: process.env.SPREADSHEET_ID,
           range,
@@ -167,7 +198,7 @@ module.exports = async (req, res) => {
     console.error("Error:", error);
     return res.status(500).json({ 
       error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      details: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
   }
 };
