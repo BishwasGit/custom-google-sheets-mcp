@@ -5,6 +5,8 @@
   "main": "http-server.js",
   "scripts": {
     "start": "node http-server.js",
+    "dev": "node http-server.js",
+    "build": "echo 'No build needed - using serverless functions'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

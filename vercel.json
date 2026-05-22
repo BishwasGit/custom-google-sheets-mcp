@@ -1,5 +1,25 @@
 {
   "name": "google-sheets-mcp",
   "version": 2,
-  "public": false
+  "public": false,
+  "builds": [
+    {
+      "src": "api/tools.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/tools",
+      "dest": "api/tools.js"
+    },
+    {
+      "src": "/tools",
+      "dest": "api/tools.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "public/$1"
+    }
+  ]
 }
