@@ -40,13 +40,44 @@ async function getSheetsClient() {
   return google.sheets({ version: "v4", auth: client });
 }
 
+// Auth middleware - accept X-API-Key header, Bearer token, or query parameter
+function authMiddleware(req, res, next) {
+  const xApiKey = req.headers['x-api-key'];
+  const authHeader = req.headers['authorization'];
+  const queryKey = req.query.key;
+  const apiKey = process.env.MCP_API_KEY;
+  
+  // Check X-API-Key header
+  if (xApiKey && xApiKey === apiKey) {
+    return next();
+  }
+  
+  // Check Bearer token
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    if (token === apiKey) {
+      return next();
+    }
+  }
+  
+  // Check query parameter (for Claude Web compatibility)
+  if (queryKey && queryKey === apiKey) {
+    return next();
+  }
+  
+  return res.status(401).json({ error: "Unauthorized: Invalid or missing API key" });
+}
+
 // Test route
 app.get("/", (req, res) => {
-  res.json({ status: "Google Sheets MCP running" });
+  res.json({ 
+    status: "Google Sheets MCP running",
+    auth: "Accepts X-API-Key or Authorization: Bearer <token>"
+  });
 });
 
 // List available tools
-app.get("/tools", (req, res) => {
+app.get("/tools", authMiddleware, (req, res) => {
   console.error("GET /tools called");
   res.json({
     tools: [
@@ -106,7 +137,7 @@ app.get("/tools", (req, res) => {
 });
 
 // Execute tool
-app.post("/tools/:name", async (req, res) => {
+app.post("/tools/:name", authMiddleware, async (req, res) => {
   const { name } = req.params;
   const { range, values, value } = req.body;
 
