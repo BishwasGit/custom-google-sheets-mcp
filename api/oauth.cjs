@@ -434,9 +434,9 @@ app.post("/", async (req, res, next) => {
 app.post("/", authMiddleware, async (req, res) => {
   const { jsonrpc, method, params, id } = req.body;
 
-  if (jsonrpc !== "2.0") {
-    return res.status(400).json({ error: "Invalid JSON-RPC version" });
-  }
+  // if (jsonrpc !== "2.0") {
+  //   return res.status(400).json({ error: "Invalid JSON-RPC version" });
+  // }
 
   try {
     // MCP Initialize
@@ -495,7 +495,7 @@ app.post("/", authMiddleware, async (req, res) => {
             },
           ],
         },
-        id,
+         id: req.body?.id, 
       });
     }
 
