@@ -378,7 +378,7 @@ app.post("/", async (req, res, next) => {
         capabilities: { tools: {} },
         serverInfo: { name: "google-sheets-mcp", version: "1.0.0" },
       },
-      id: req.body.id,
+      id: req.body?.id,
     });
   }
    if (req.body?.method === "tools/list") {
