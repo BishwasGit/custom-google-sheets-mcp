@@ -12,19 +12,29 @@ console.error("🌐 Initializing Google Sheets MCP HTTP Server...");
 // Google Sheets auth - handle both file path and JSON content
 let authConfig;
 try {
-  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  let credString;
   
-  if (credPath) {
-    // Try to parse as JSON first (for Vercel/cloud environments)
+  // Check for base64-encoded credentials (Vercel)
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_B64) {
+    console.error("📖 Decoding base64 service account...");
+    credString = Buffer.from(process.env.GOOGLE_APPLICATION_CREDENTIALS_B64, 'base64').toString('utf8');
+    authConfig = JSON.parse(credString);
+  } 
+  // Check for JSON string directly
+  else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     try {
+      // Try to parse as JSON first
       authConfig = JSON.parse(credPath);
     } catch {
-      // If not JSON, treat as file path (for local development)
+      // If not JSON, treat as file path
       authConfig = JSON.parse(fs.readFileSync(credPath, 'utf8'));
     }
   } else {
-    throw new Error("GOOGLE_APPLICATION_CREDENTIALS not set");
+    throw new Error("GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS_B64 not set");
   }
+  
+  console.error("✓ Credentials loaded successfully");
 } catch (err) {
   console.error("❌ Failed to load Google credentials:", err.message);
   process.exit(1);
