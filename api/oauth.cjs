@@ -423,7 +423,7 @@ app.post("/", async (req, res, next) => {
           },
         ],
       },
-      id,
+      id: req.body?.id,
     });
   }
   next(); // pass to authenticated handler below
@@ -456,7 +456,7 @@ app.post("/", authMiddleware, async (req, res) => {
           capabilities: { tools: {} },
           serverInfo: { name: "google-sheets-mcp", version: "1.0.0" },
         },
-        id,
+        id: req.body?.id,
       });
     }
 
@@ -522,7 +522,7 @@ app.post("/", authMiddleware, async (req, res) => {
           result: {
             content: [{ type: "text", text: JSON.stringify(response.data.values || []) }],
           },
-          id,
+          id: req.body?.id,
         });
       }
 
@@ -536,7 +536,7 @@ app.post("/", authMiddleware, async (req, res) => {
         return res.json({
           jsonrpc: "2.0",
           result: { content: [{ type: "text", text: "Row appended successfully" }] },
-          id,
+          id: req.body?.id,
         });
       }
 
@@ -550,14 +550,14 @@ app.post("/", authMiddleware, async (req, res) => {
         return res.json({
           jsonrpc: "2.0",
           result: { content: [{ type: "text", text: "Cell updated successfully" }] },
-          id,
+          id: req.body?.id,
         });
       }
 
       return res.status(200).json({
         jsonrpc: "2.0",
         error: { code: -32601, message: "Tool not found" },
-        id,
+        id: req.body?.id,
       });
     }
 
@@ -565,14 +565,14 @@ app.post("/", authMiddleware, async (req, res) => {
     return res.status(200).json({
       jsonrpc: "2.0",
       error: { code: -32601, message: "Method not found" },
-      id,
+      id: req.body?.id,
     });
 
   } catch (error) {
     return res.status(500).json({
       jsonrpc: "2.0",
       error: { code: -32000, message: error.message },
-      id,
+      id: req.body?.id,
     });
   }
 });
