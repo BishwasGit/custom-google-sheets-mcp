@@ -1,116 +1,212 @@
-# Google Sheets MCP
+# Google Sheets MCP for Claude.ai
 
-A Model Context Protocol (MCP) server for Google Sheets integration with Claude AI.
+Connect Claude.ai to your Google Sheets via a custom MCP (Model Context Protocol) server hosted on Vercel. Once set up, Claude can read, append, and update your spreadsheet directly from the chat.
 
-## 🐧 For Linux Users
+---
 
-If you're on **Linux**, you can't use Claude Desktop (it's macOS/Windows only). Instead, use our **web dashboard**!
+## What you get
 
-→ **[Linux Setup Guide](LINUX_SETUP.md)** ← Open this for complete instructions
+- `read_sheet` — read any range from your sheet
+- `append_row` — add a new row
+- `update_cell` — update a specific cell
 
-**Quick start:** Visit https://custom-google-sheets-mcp.vercel.app/ and add your API key in Settings.
+---
 
-## Features
+## Prerequisites
 
-- **append_row** - Add rows to your Google Sheet
-- **read_sheet** - Query data from ranges
-- **update_cell** - Modify individual cells
-- **API Key Authentication** - Secure access to your MCP server
-- **Web Dashboard** - User-friendly interface for all operations (Linux-friendly!)
+- A [Vercel](https://vercel.com) account
+- A [Google Cloud](https://console.cloud.google.com) account
+- A Google Sheet you want Claude to access
+- Node.js 18+ installed locally
+- Git
 
-## Setup
+---
 
-### Prerequisites
+## Step 1 — Clone and install
 
-- Node.js 18+
-- Google Cloud Service Account with Sheets API enabled
-- Claude Pro/Max subscription (for Claude Web integration)
-
-### Local Development
-
-1. Clone the repository
 ```bash
-git clone git@github.com:BishwasGit/custom-google-sheets-mcp.git
-cd custom-google-sheets-mcp
-```
-
-2. Install dependencies
-```bash
+git clone <your-repo-url>
+cd custom_mcp
 npm install
 ```
 
-3. Set up environment variables
-```bash
-cp .env.example .env
-```
+---
 
-Edit `.env`:
-```env
-GOOGLE_APPLICATION_CREDENTIALS={"type":"service_account",...}
-SPREADSHEET_ID=your_spreadsheet_id
-MCP_API_KEY=your_secure_api_key
-PORT=5000
-```
+## Step 2 — Create a Google Cloud OAuth app
 
-4. Run locally
-```bash
-PORT=5000 node http-server.js
-```
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project (or use existing)
+3. Go to **APIs & Services → Enable APIs** → enable **Google Sheets API**
+4. Go to **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**
+5. Application type: **Web application**
+6. Name it (e.g. `Claude MCP`)
+7. Under **Authorized redirect URIs** add:
+   ```
+   https://YOUR-VERCEL-APP.vercel.app/oauth/google/callback
+   ```
+   Replace `YOUR-VERCEL-APP` with your actual Vercel app name.
+8. Click **Save** — copy the **Client ID** and **Client Secret**
 
-### Deploy to Vercel
+> ⚠️ Make sure the redirect URI matches your Vercel deployment URL exactly — no trailing slash, must be `https`.
 
-1. Push to GitHub (already done)
-2. Import project in Vercel dashboard
-3. Add these environment variables:
-   - `GOOGLE_APPLICATION_CREDENTIALS` - Your service account JSON (full content)
-   - `SPREADSHEET_ID` - Your spreadsheet ID
-   - `MCP_API_KEY` - A secure random API key (generate with: `openssl rand -hex 32`)
-4. Deploy!
+---
 
-### Connect to Claude Web
+## Step 3 — Configure OAuth consent screen
 
-**⚠️ Important:** Claude Web requires authentication for custom connectors.
+1. Go to **APIs & Services → OAuth consent screen**
+2. User type: **External**
+3. Fill in app name, support email
+4. Add scope: `https://www.googleapis.com/auth/spreadsheets`
+5. Under **Audience → Test users** add your Gmail address
+6. Click **Publish app** → Confirm
 
-1. Go to `claude.ai/customize/connectors`
-2. Add custom connector:
-   - **Name**: `google-sheets-mcp`
-   - **URL**: `https://custom-google-sheets-mcp.vercel.app`
-   - **Authentication**: Select "API Key" 
-   - **API Key Header**: `X-API-Key`
-   - **API Key Value**: Your `MCP_API_KEY` value
-3. Save
+> ⚠️ You must publish the app (even unverified) or Google will block the login. When you see the "unverified app" warning during login, click **Advanced → Go to app**.
 
-## API Endpoints
+---
 
-All endpoints except `/` require `X-API-Key` header:
+## Step 4 — Deploy to Vercel
+
+### Option A — Via Vercel CLI
 
 ```bash
-curl -H "X-API-Key: your_key" https://custom-google-sheets-mcp.vercel.app/tools
+npm install -g vercel
+vercel login
+vercel --prod
 ```
 
-- `GET /` - Server info (no auth required)
-- `GET /tools` - List available tools
-- `POST /tools/append_row` - Append a row
-- `POST /tools/read_sheet` - Read data
-- `POST /tools/update_cell` - Update a cell
+### Option B — Via GitHub
 
-## Environment Variables
+Push to GitHub → import project in Vercel dashboard → it auto-deploys.
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GOOGLE_APPLICATION_CREDENTIALS` | Service account JSON | Yes |
-| `SPREADSHEET_ID` | Google Sheet ID | Yes |
-| `MCP_API_KEY` | API key for authentication | Yes |
-| `PORT` | Server port (default: 3000) | No |
+---
 
-## Security
+## Step 5 — Set environment variables in Vercel
 
-- API keys are validated on all tool endpoints
-- Service account credentials are stored securely as environment variables
-- Only HTTPS connections are supported
-- CORS is enabled for Claude Web integration
+Go to **Vercel Dashboard → Your Project → Settings → Environment Variables** and add:
+
+| Variable | Value |
+|---|---|
+| `GOOGLE_CLIENT_ID` | From Google Cloud Console OAuth client |
+| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console OAuth client |
+| `GOOGLE_REDIRECT_URI` | `https://YOUR-VERCEL-APP.vercel.app/oauth/google/callback` |
+| `JWT_SECRET` | A long random string (generate below) |
+| `SPREADSHEET_ID` | Your Google Sheet ID (from the URL) |
+
+Generate a secure JWT secret:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Get your Spreadsheet ID from the sheet URL:
+```
+https://docs.google.com/spreadsheets/d/SPREADSHEET_ID_IS_HERE/edit
+```
+
+> ⚠️ After adding env vars, you must redeploy for them to take effect:
+> ```bash
+> vercel --prod
+> ```
+
+---
+
+## Step 6 — Verify deployment
+
+Hit your health endpoint:
+```
+https://YOUR-VERCEL-APP.vercel.app/health
+```
+
+Should return:
+```json
+{ "status": "ok", "message": "Google Sheets MCP OAuth Server" }
+```
+
+---
+
+## Step 7 — Connect to Claude.ai
+
+1. Go to [claude.ai](https://claude.ai) → **Settings → Connectors**
+2. Click **Add connector**
+3. Enter:
+   - **Name:** `Google Sheets MCP`
+   - **URL:** `https://YOUR-VERCEL-APP.vercel.app`
+4. Click **Connect**
+5. Google login screen appears → sign in with the account you whitelisted
+6. Authorize the Sheets scope
+7. Done — Claude now has access to your sheet ✅
+
+---
+
+## Usage examples
+
+Once connected, just ask Claude naturally:
+
+```
+Read the data in Sheet1!A1:D10
+```
+```
+Append a row with ["John", "Doe", "john@example.com"] to Sheet1!A:Z
+```
+```
+Update cell Sheet1!B3 to "Completed"
+```
+
+---
+
+## Project structure
+
+```
+├── api/
+│   └── oauth.cjs        ← Main server (Vercel entry point)
+├── public/
+│   └── index.html       ← Dashboard UI
+├── vercel.json          ← Vercel routing config
+└── package.json
+```
+
+---
+
+## How it works
+
+```
+Claude.ai → POST / (tools/list)     → Your Vercel server → returns tool definitions
+Claude.ai → GET /oauth/authorize    → Redirects to Google login
+Google    → GET /oauth/google/callback → Issues JWT token back to Claude
+Claude.ai → POST / (tools/call) + JWT → Your server → Google Sheets API → data
+```
+
+---
+
+## Troubleshooting
+
+**500 FUNCTION_INVOCATION_FAILED**
+Your `package.json` likely has `"type": "module"` — remove it. The server uses CommonJS (`require`).
+
+**"This connector has no tools available"**
+The `tools/list` method is behind auth middleware. Make sure it's handled in the unauthenticated first handler.
+
+**Error 400: redirect_uri_mismatch**
+- Check `GOOGLE_REDIRECT_URI` in Vercel matches exactly what's registered in Google Console
+- Make sure you're using the OAuth Client ID, not a service account ID
+- Publish your OAuth app in Google Console (Testing mode blocks logins)
+
+**"Authorization with the MCP server failed"**
+Disconnect and reconnect the Claude connector to force a fresh token. Cached tokens from failed attempts won't work.
+
+**POST returning 404**
+All JSON-RPC errors must return HTTP 200, not 404. Check that unknown methods return `res.status(200).json(...)`.
+
+---
+
+## Security notes
+
+- Change `MCP_API_KEY` from any placeholder value before sharing the deployment
+- `JWT_SECRET` should be at least 32 random characters
+- The Spreadsheet ID and OAuth credentials are tied to your Vercel deployment — don't commit `.env` files
+- For production use, replace in-memory `pkceStore`/`tokenStore` Maps with a database (Redis, Upstash, etc.) — they reset on cold starts
+
+---
 
 ## License
 
 MIT
-
