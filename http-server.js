@@ -37,7 +37,7 @@ try {
   console.error("✓ Credentials loaded successfully");
 } catch (err) {
   console.error("❌ Failed to load Google credentials:", err.message);
-  process.exit(1);
+  // process.exit(1);
 }
 
 const auth = new google.auth.GoogleAuth({

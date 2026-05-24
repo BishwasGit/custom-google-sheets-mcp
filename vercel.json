@@ -2,16 +2,6 @@
   "name": "google-sheets-mcp",
   "version": 2,
   "public": false,
-  "builds": [
-    {
-      "src": "api/oauth.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/oauth.js"
-    }
-  ]
+  "builds": [{ "src": "api/oauth.cjs", "use": "@vercel/node" }],
+  "routes": [{ "src": "/(.*)", "dest": "api/oauth.cjs" }]
 }
