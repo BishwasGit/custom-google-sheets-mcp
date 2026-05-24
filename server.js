@@ -1,8 +1,10 @@
-require("dotenv").config();
-const { McpServer } = require("@modelcontextprotocol/sdk/server/mcp.js");
-const { StdioServerTransport } = require("@modelcontextprotocol/sdk/server/stdio.js");
-const { google } = require("googleapis");
-const z = require("zod");
+import dotenv from "dotenv";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { google } from "googleapis";
+import z from "zod";
+
+dotenv.config();
 
 const mcpServer = new McpServer({
   name: "google-sheets-mcp",
@@ -54,12 +56,7 @@ mcpServer.registerTool(
       };
     } catch (error) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `Error: ${error.message}`,
-          },
-        ],
+        content: [{ type: "text", text: `Error: ${error.message}` }],
         isError: true,
       };
     }
@@ -94,12 +91,7 @@ mcpServer.registerTool(
       };
     } catch (error) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `Error: ${error.message}`,
-          },
-        ],
+        content: [{ type: "text", text: `Error: ${error.message}` }],
         isError: true,
       };
     }
@@ -140,12 +132,7 @@ mcpServer.registerTool(
       };
     } catch (error) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `Error: ${error.message}`,
-          },
-        ],
+        content: [{ type: "text", text: `Error: ${error.message}` }],
         isError: true,
       };
     }

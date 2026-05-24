@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google-sheets": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "${GOOGLE_APPLICATION_CREDENTIALS}",
+        "SPREADSHEET_ID": "${SPREADSHEET_ID}"
+      }
+    }
+  }
+}
