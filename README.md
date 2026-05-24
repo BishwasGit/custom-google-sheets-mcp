@@ -88,13 +88,14 @@ Go to **Vercel Dashboard → Your Project → Settings → Environment Variables
 
 `` bashnode -e "console.log(require('crypto').randomBytes(32).toString('hex'))" ``
 
+This outputs 64 random hex characters like a3f8c2... — copy that output directly as your JWT_SECRET value in Vercel. Never use a human-readable phrase like "mysecret123" — it's trivially guessable.|
+
 | Variable | Value |
 |---|---|
 | `GOOGLE_CLIENT_ID` | From Google Cloud Console OAuth client |
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud Console OAuth client |
 | `GOOGLE_REDIRECT_URI` | `https://YOUR-VERCEL-APP.vercel.app/oauth/google/callback` |
 | `JWT_SECRET` | A long random string (generate below) |
-This outputs 64 random hex characters like a3f8c2... — copy that output directly as your JWT_SECRET value in Vercel. Never use a human-readable phrase like "mysecret123" — it's trivially guessable.|
 | `SPREADSHEET_ID` | Your Google Sheet ID (from the URL) |
 
 Generate a secure JWT secret:
