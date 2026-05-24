@@ -434,6 +434,14 @@ app.post("/", async (req, res, next) => {
 app.post("/", authMiddleware, async (req, res) => {
   const { jsonrpc, method, params, id } = req.body;
 
+
+  if (method?.startsWith("notifications/")) {
+  return res.status(200).json({ jsonrpc: "2.0", result: {}, id });
+  }
+  
+  if (method === "ping") {
+    return res.status(200).json({ jsonrpc: "2.0", result: {}, id });
+  }
   // if (jsonrpc !== "2.0") {
   //   return res.status(400).json({ error: "Invalid JSON-RPC version" });
   // }
@@ -546,7 +554,7 @@ app.post("/", authMiddleware, async (req, res) => {
         });
       }
 
-      return res.status(404).json({
+      return res.status(200).json({
         jsonrpc: "2.0",
         error: { code: -32601, message: "Tool not found" },
         id,
@@ -554,7 +562,7 @@ app.post("/", authMiddleware, async (req, res) => {
     }
 
     // Unknown method
-    return res.status(404).json({
+    return res.status(200).json({
       jsonrpc: "2.0",
       error: { code: -32601, message: "Method not found" },
       id,
