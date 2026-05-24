@@ -380,7 +380,7 @@ app.post("/", async (req, res, next) => {
       id: req.body.id,
     });
   }
-   if (method === "tools/list") {
+   if (req.body?.method === "tools/list") {
     return res.json({
       jsonrpc: "2.0",
       result: {
