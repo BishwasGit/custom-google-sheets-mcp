@@ -65,6 +65,7 @@ app.get("/oauth/authorize", (req, res) => {
       access_type: "offline",
       scope: SCOPES,
       state: pkceKey,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
     });
 
     res.redirect(googleAuthUrl);
