@@ -380,6 +380,51 @@ app.post("/", async (req, res, next) => {
       id: req.body.id,
     });
   }
+   if (method === "tools/list") {
+    return res.json({
+      jsonrpc: "2.0",
+      result: {
+        tools: [
+          {
+            name: "read_sheet",
+            description: "Read data from a Google Sheet",
+            inputSchema: {
+              type: "object",
+              properties: {
+                range: { type: "string", description: 'e.g. "Sheet1!A1:B10"' },
+              },
+              required: ["range"],
+            },
+          },
+          {
+            name: "append_row",
+            description: "Append a row to a Google Sheet",
+            inputSchema: {
+              type: "object",
+              properties: {
+                range: { type: "string" },
+                values: { type: "array", items: { type: "string" } },
+              },
+              required: ["range", "values"],
+            },
+          },
+          {
+            name: "update_cell",
+            description: "Update a specific cell in a Google Sheet",
+            inputSchema: {
+              type: "object",
+              properties: {
+                range: { type: "string" },
+                value: { type: "string" },
+              },
+              required: ["range", "value"],
+            },
+          },
+        ],
+      },
+      id,
+    });
+  }
   next(); // pass to authenticated handler below
 });
 
